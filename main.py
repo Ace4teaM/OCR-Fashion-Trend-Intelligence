@@ -7,6 +7,7 @@ from tqdm.notebook import tqdm
 import base64
 import io
 from dotenv import load_dotenv
+import func
 
 load_dotenv()  # charge automatiquement le fichier .env
 
@@ -34,17 +35,35 @@ else:
 
 
 def query(filename):
-    with open(filename, "rb") as f:
-        data = f.read()
-    if filename.endswith(".jpg") or filename.endswith(".jpeg"):
-        this_headers={"Content-Type": "image/jpeg", **headers}
-    elif filename.endswith(".png"):
-        this_headers={"Content-Type": "image/png", **headers}
-    else:
-        raise Exception("Format de fichier image inconnu : " + filename)
-    
-    response = requests.post(API_URL, headers=this_headers, data=data)
-    return response.json()
+    try:
+        with open(filename, "rb") as f:
+            data = f.read()
+        if filename.endswith(".jpg") or filename.endswith(".jpeg"):
+            this_headers={"Content-Type": "image/jpeg", **headers}
+        elif filename.endswith(".png"):
+            this_headers={"Content-Type": "image/png", **headers}
+        else:
+            raise Exception("Format de fichier image inconnu : " + filename)
+        
+        response = requests.post(API_URL, headers=this_headers, data=data)
 
-output = query(f"{image_dir}/{image_paths[0]}")
-print("response",output)
+        if not (response.status_code >= 200 and response.status_code < 300):
+            raise Exception("Erreur de traitement de l'image : " + filename)
+
+        results = response.json()
+        (width, height) = func.get_image_dimensions(filename)
+        image_data = func.create_masks(results, width, height)
+        
+        for result in results:
+            print('score', result['score'])
+            print('label', result['label'])
+
+    except Exception as e:
+        print(f"Une erreur est survenue : {e}")
+
+for filename in image_paths:
+    print(f"{image_dir}/{filename}")
+    query(f"{image_dir}/{filename}")
+    break# un seul pour le moment
+
+print("finish")
