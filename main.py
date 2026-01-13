@@ -1,11 +1,4 @@
 import os
-import requests
-from PIL import Image
-import matplotlib.pyplot as plt
-import numpy as np
-from tqdm.notebook import tqdm
-import base64
-import io
 from dotenv import load_dotenv
 import func
 
