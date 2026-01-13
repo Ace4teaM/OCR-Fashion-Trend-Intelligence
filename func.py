@@ -2,6 +2,11 @@ import base64
 import io
 from PIL import Image
 import numpy as np
+import requests
+import os
+import time
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 CLASS_MAPPING = {
     "Background": 0,
@@ -93,3 +98,104 @@ def create_masks(results, width, height):
             combined_mask[mask_array > 0] = 0 # Class ID for Background is 0
 
     return combined_mask
+
+
+def segment_image(filename):
+    """
+    Segmente une image en utilisant l'API Hugging Face.
+
+    Args:
+        filename (string): Chemin complet vers le fichier image (png ou jpeg)
+
+    Returns:
+        np.uint8 array: Masque de l'image
+    """
+
+    API_URL = "https://router.huggingface.co/hf-inference/models/sayeed99/segformer_b3_clothes"
+
+    api_token = os.getenv("HUGGING_FACE_KEY")
+
+    headers = {
+        "Authorization": f"Bearer {api_token}"
+        # Le "Content-Type" sera ajouté dynamiquement lors de l'envoi de l'image
+    }
+
+    with open(filename, "rb") as f:
+        data = f.read()
+
+    # détermine le type MIME de l'image
+    if filename.endswith(".jpg") or filename.endswith(".jpeg"):
+        headers={"Content-Type": "image/jpeg", **headers}
+    elif filename.endswith(".png"):
+        headers={"Content-Type": "image/png", **headers}
+    else:
+        raise Exception("Format de fichier image inconnu : " + filename)
+    
+    # transmet l'image à l'API
+    response = requests.post(API_URL, headers=headers, data=data)
+    
+    if not (response.status_code >= 200 and response.status_code < 300):
+        raise Exception("Erreur de traitement de l'image : " + filename)
+
+    # obtient les différents résultats et crée un tableau unique pour représernter le masque à plusieurs niveaux
+    results = response.json()
+    (width, height) = get_image_dimensions(filename)
+    return create_masks(results, width, height) # np.uint8 array
+
+def segment_images_batch(list_of_image_paths):
+    """
+    Segmente une liste d'images en utilisant l'API Hugging Face.
+
+    Args:
+        list_of_image_paths (list): Liste des chemins vers les images.
+
+    Returns:
+        list: Liste des masques de segmentation (tableaux NumPy).
+              Contient None si une image n'a pas pu être traitée.
+    """
+    batch_segmentations = []
+
+    for filename in list_of_image_paths:
+        try:
+            print(f"Traitement de {filename}")
+            batch_segmentations.append(segment_image(filename))
+            time.sleep(1)
+        except Exception as e:
+            print(f"Une erreur est survenue : {e}")
+            batch_segmentations.append(None)
+
+    return batch_segmentations
+
+
+def display_segmented_images_batch(original_image_paths, segmentation_masks):
+    """
+    Affiche les images originales et leurs masques segmentés.
+
+    Args:
+        original_image_paths (list): Liste des chemins des images originales.
+        segmentation_masks (list): Liste des masques segmentés (NumPy arrays).
+    """
+
+    i = 0
+    for image_data in segmentation_masks:
+        path = original_image_paths.pop(0)
+
+        if image_data is None:
+            continue
+
+        i = i+1
+        plt.figure(i)
+        plt.suptitle(os.path.basename(path))
+
+        # Première image
+        plt.subplot(1, 2, 1)  # 1 ligne, 2 colonnes, image 1
+        plt.imshow(mpimg.imread(path))
+        plt.axis('off')
+
+        # Deuxième image
+        plt.subplot(1, 2, 2)  # 1 ligne, 2 colonnes, image 2
+        plt.imshow(image_data, cmap='gray')
+        plt.axis('off')
+
+    plt.show()
+

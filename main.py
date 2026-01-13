@@ -13,75 +13,24 @@ load_dotenv()  # charge automatiquement le fichier .env
 
 # variables globales
 image_dir = "./content/images_a_segmenter"
-output_dir = "./content/masks"
-max_images = 3  # Commençons avec peu d'images
-
-# charge le token Huging face
-api_token = os.getenv("HUGGING_FACE_KEY")
-
-API_URL = "https://router.huggingface.co/hf-inference/models/sayeed99/segformer_b3_clothes"
-headers = {
-    "Authorization": f"Bearer {api_token}"
-    # Le "Content-Type" sera ajouté dynamiquement lors de l'envoi de l'image
-}
+max_images = 2
 
 # Lister les chemins des images à traiter
 # Assurez-vous d'avoir des images dans le dossier 'image_dir'!
-image_paths = os.listdir(image_dir)
+image_paths = [f"{image_dir}/{path}" for path in os.listdir(image_dir)]
 
-if not image_paths:
-    print(f"Aucune image trouvée dans '{image_dir}'. Veuillez y ajouter des images.")
+# Appeler la fonction pour segmenter les images listées dans image_paths
+if image_paths:
+    print(f"\nTraitement de {len(image_paths)} image(s) en batch...")
+    batch_seg_results = func.segment_images_batch(image_paths[:max_images]) 
+    print("Traitement en batch terminé.")
 else:
-    print(f"{len(image_paths)} image(s) à traiter : {image_paths}")
+    batch_seg_results = []
+    print("Aucune image à traiter en batch.")
 
 
-def query(filename):
-    try:
-        with open(filename, "rb") as f:
-            data = f.read()
-        if filename.endswith(".jpg") or filename.endswith(".jpeg"):
-            this_headers={"Content-Type": "image/jpeg", **headers}
-        elif filename.endswith(".png"):
-            this_headers={"Content-Type": "image/png", **headers}
-        else:
-            raise Exception("Format de fichier image inconnu : " + filename)
-        
-        response = requests.post(API_URL, headers=this_headers, data=data)
-
-        if not (response.status_code >= 200 and response.status_code < 300):
-            raise Exception("Erreur de traitement de l'image : " + filename)
-
-        results = response.json()
-        (width, height) = func.get_image_dimensions(filename)
-        image_data = func.create_masks(results, width, height) # np.uint8 array
-
-        #prépare l'image
-        plt.imshow(image_data, cmap='gray')
-        plt.axis('off')
-
-        # pour export
-        plt.savefig(f"{output_dir}/{os.path.basename(filename)}", bbox_inches='tight', pad_inches=0)
-        plt.close()
-        # pour affichage
-        #plt.show()
-
-        # pour debug
-        #for result in results:
-        #    print('score', result['score'])
-        #    print('label', result['label'])
-        #    print('mask', result['mask'])
-
-    except Exception as e:
-        print(f"Une erreur est survenue : {e}")
-
-i = 0
-for filename in image_paths:
-    # limite le nombre d'images traitées
-    i=i+1
-    if i >= max_images:
-        break
-    # traite l'image
-    print(f"{image_dir}/{filename}")
-    query(f"{image_dir}/{filename}")
-
-print("finish")
+# Afficher les résultats du batch
+if batch_seg_results:
+    func.display_segmented_images_batch(image_paths, batch_seg_results)
+else:
+    print("Aucun résultat de segmentation à afficher.")
