@@ -13,6 +13,7 @@ load_dotenv()  # charge automatiquement le fichier .env
 
 # variables globales
 image_dir = "./content/images_a_segmenter"
+output_dir = "./content/masks"
 max_images = 3  # Commençons avec peu d'images
 
 # charge le token Huging face
@@ -52,18 +53,35 @@ def query(filename):
 
         results = response.json()
         (width, height) = func.get_image_dimensions(filename)
-        image_data = func.create_masks(results, width, height)
-        
-        for result in results:
-            print('score', result['score'])
-            print('label', result['label'])
+        image_data = func.create_masks(results, width, height) # np.uint8 array
+
+        #prépare l'image
+        plt.imshow(image_data, cmap='gray')
+        plt.axis('off')
+
+        # pour export
+        plt.savefig(f"{output_dir}/{os.path.basename(filename)}", bbox_inches='tight', pad_inches=0)
+        plt.close()
+        # pour affichage
+        #plt.show()
+
+        # pour debug
+        #for result in results:
+        #    print('score', result['score'])
+        #    print('label', result['label'])
+        #    print('mask', result['mask'])
 
     except Exception as e:
         print(f"Une erreur est survenue : {e}")
 
+i = 0
 for filename in image_paths:
+    # limite le nombre d'images traitées
+    i=i+1
+    if i >= max_images:
+        break
+    # traite l'image
     print(f"{image_dir}/{filename}")
     query(f"{image_dir}/{filename}")
-    break# un seul pour le moment
 
 print("finish")
