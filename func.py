@@ -178,7 +178,7 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
 
     i = 0
     for image_data in segmentation_masks:
-        path = original_image_paths.pop(0)
+        path = original_image_paths[i]
 
         if image_data is None:
             continue
