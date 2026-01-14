@@ -7,6 +7,8 @@ import os
 import time
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 CLASS_MAPPING = {
     "Background": 0,
@@ -176,6 +178,11 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
         segmentation_masks (list): Liste des masques segmentés (NumPy arrays).
     """
 
+    # crée une ColorMap à partir des indices des classes
+    # obtient une couleur pour chaque indice de classe à partir d'un jeu existant
+    # voir couleurs disponibles : https://matplotlib.org/stable/gallery/color/colormap_reference.html
+    cmap =  mpl.colormaps['tab20b'].resampled(len(CLASS_MAPPING))
+
     i = 0
     for image_data in segmentation_masks:
         path = original_image_paths[i]
@@ -194,9 +201,11 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
 
         # Deuxième image
         plt.subplot(1, 2, 2)  # 1 ligne, 2 colonnes, image 2
-        plt.imshow(image_data, cmap='gray')
+        plt.imshow(image_data, cmap=cmap)
         plt.axis('off')
 
+    cbar = plt.colorbar(ticks=range(0,len(CLASS_MAPPING)))
+    cbar.ax.set_yticklabels(CLASS_MAPPING.keys())
     plt.show()
 
 
