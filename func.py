@@ -199,3 +199,30 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
 
     plt.show()
 
+
+def export_segmented_images_batch(output_dir, original_image_paths, segmentation_masks):
+    """
+    Exporte les masques des images segmentés.
+
+    Args:
+        original_image_paths (list): Liste des chemins des images originales.
+        segmentation_masks (list): Liste des masques segmentés (NumPy arrays).
+    """
+
+    i = 0
+    for image_data in segmentation_masks:
+        path = original_image_paths[i]
+
+        if image_data is None:
+            continue
+
+        i = i+1
+
+        # image
+        plt.imshow(image_data, cmap='gray')
+        plt.axis('off')
+
+        # pour export
+        plt.savefig(f"{output_dir}/{os.path.basename(path)}", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
