@@ -204,8 +204,9 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
         plt.imshow(image_data, cmap=cmap)
         plt.axis('off')
 
-    cbar = plt.colorbar(ticks=range(0,len(CLASS_MAPPING)))
-    cbar.ax.set_yticklabels(CLASS_MAPPING.keys())
+        cbar = plt.colorbar(ticks=range(0,len(CLASS_MAPPING)))
+        cbar.ax.set_yticklabels(CLASS_MAPPING.keys())
+        
     plt.show()
 
 
