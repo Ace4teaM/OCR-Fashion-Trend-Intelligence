@@ -102,12 +102,13 @@ def create_masks(results, width, height):
     return combined_mask
 
 
-def segment_image(filename):
+def segment_image(filename, infos={}):
     """
     Segmente une image en utilisant l'API Hugging Face.
 
     Args:
         filename (string): Chemin complet vers le fichier image (png ou jpeg)
+        infos (dict): Contient les informations de statistiques de performances
 
     Returns:
         np.uint8 array: Masque de l'image
@@ -134,13 +135,21 @@ def segment_image(filename):
         raise Exception("Format de fichier image inconnu : " + filename)
     
     # transmet l'image à l'API
-    response = requests.post(API_URL, headers=headers, data=data)
+    start = time.perf_counter()  # horloge haute précision
+    response = requests.post(API_URL, headers=headers, data=data) # synchrone
+    duration = (time.perf_counter() - start)
     
     if not (response.status_code >= 200 and response.status_code < 300):
         raise Exception("Erreur de traitement de l'image : " + filename)
 
     # obtient les différents résultats et crée un tableau unique pour représernter le masque à plusieurs niveaux
     results = response.json()
+    
+    # information sur les performances
+    infos["scores"] = [item['score'] for item in results]
+    infos["score"] = sum(infos["scores"]) / len(infos["scores"])
+    infos["duration"] = duration
+
     (width, height) = get_image_dimensions(filename)
     return create_masks(results, width, height) # np.uint8 array
 
