@@ -7,7 +7,7 @@ load_dotenv()  # charge automatiquement le fichier .env
 # variables globales
 image_dir = "./content/images_a_segmenter"
 output_dir = "./content/masks"
-max_images = 2
+max_images = 1
 
 # Lister les chemins des images à traiter
 # Assurez-vous d'avoir des images dans le dossier 'image_dir'!

@@ -209,6 +209,27 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
     plt.show()
 
 
+def export_segmented_image(output_file, image_data):
+    """
+    Exporte le masque de l'image segmenté.
+
+    Args:
+        output_file (string): Chemin de l'image à créer
+        image_data (NumPy array): Données de l'image
+    """
+
+    if image_data is None:
+        return
+
+    # image
+    plt.imshow(image_data, cmap='gray')
+    plt.axis('off')
+
+    # pour export
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
 def export_segmented_images_batch(output_dir, original_image_paths, segmentation_masks):
     """
     Exporte les masques des images segmentés.
@@ -235,3 +256,91 @@ def export_segmented_images_batch(output_dir, original_image_paths, segmentation
         plt.savefig(f"{output_dir}/{os.path.basename(path)}", bbox_inches='tight', pad_inches=0)
         plt.close()
 
+
+def get_mask_bbox(image_data, mask_id):
+    """
+    Obtient le bounding-box du masque dans l'image
+
+    Args:
+        image_data (numpy array uint8): Données de l'image masque
+        mask_id (int): id du masque (CLASS_MAPPING)
+
+    Returns:
+        tuple: (x1, y1, x2, y2) du bounding-box
+    """
+    ys, xs = np.where(image_data == mask_id)
+    ymin, ymax = ys.min(), ys.max()
+    xmin, xmax = xs.min(), xs.max()
+
+    if xmin == ymin == xmax == ymax == 0:
+        return None
+    
+    return (xmin, ymin, xmax + 1, ymax + 1)
+
+def get_color_mask_bbox(image_path, rgb=[255,0,255]):
+    """
+    Obtient le bounding-box du masque dans l'image
+
+    Args:
+        image_data (numpy array uint8): Données de l'image masque
+        mask_id (int): id du masque (CLASS_MAPPING)
+
+    Returns:
+        tuple: (x1, y1, x2, y2) du bounding-box
+    """
+    img = Image.open(image_path).convert("RGB")
+    image_data = np.array(img)
+
+    mask = np.all(image_data == rgb, axis=2)
+    ys, xs = np.where(mask)
+    ymin, ymax = ys.min(), ys.max()
+    xmin, xmax = xs.min(), xs.max()
+
+    if xmin == ymin == xmax == ymax == 0:
+        return None
+    
+    return (xmin, ymin, xmax + 1, ymax + 1)
+
+def cal_IoU_bbox(box1,box2):
+    """
+    Calcule l'IoU (Intersection over Union) entre 2 bounding-box
+    IoU = Aire de l'intersection / Aire de l'union
+
+    Avec :
+        Intersection = zone commune aux deux boxes
+        Union = aire totale couverte par les deux boxes
+
+    Args:
+        box1 (Tuple (x_min, y_min, x_max, y_max)): 
+        box2 (Tuple (x_min, y_min, x_max, y_max)): 
+
+    Returns:
+        IoU (0-1)
+    """
+
+    x_min = 0
+    y_min = 1
+    x_max = 2
+    y_max = 3
+
+    # Coordonnées de l’intersection
+    # le rectangle le plus petit des 2 boxs
+    xA = max(box1[x_min], box2[x_min])
+    yA = max(box1[y_min], box2[y_min])
+    xB = min(box1[x_max], box2[x_max])
+    yB = min(box1[y_max], box2[y_max])
+
+    # Aire de l’intersection
+    inter_width  = max(0, xB - xA)
+    inter_height = max(0, yB - yA)
+    inter_area   = inter_width * inter_height
+
+    # Aire de chaque bbox (w*h)
+    area1 = (box1[x_max] - box1[x_min]) * (box1[y_max] - box1[y_min])
+    area2 = (box2[x_max] - box2[x_min]) * (box2[y_max] - box2[y_min])
+
+    # Aire de l’union
+    union_area = area1 + area2 - inter_area
+
+    # IoU
+    return inter_area / union_area
