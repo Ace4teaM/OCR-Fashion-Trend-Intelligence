@@ -8,7 +8,7 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib as mpl
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap, BoundaryNorm
 
 CLASS_MAPPING = {
     "Background": 0,
@@ -183,6 +183,12 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
     # voir couleurs disponibles : https://matplotlib.org/stable/gallery/color/colormap_reference.html
     cmap =  mpl.colormaps['tab20b'].resampled(len(CLASS_MAPPING))
 
+
+    # Normalisation pour aligner les ticks au centre
+    # chaque couleur correspond exactement à un intervalle [i, i+1], donc le tick au centre = i + 0.5
+    bounds = np.arange(len(CLASS_MAPPING)+1)  # [0,1,2,3]
+    norm = BoundaryNorm(bounds, cmap.N)
+
     i = 0
     for image_data in segmentation_masks:
         path = original_image_paths[i]
@@ -201,12 +207,12 @@ def display_segmented_images_batch(original_image_paths, segmentation_masks):
 
         # Deuxième image
         plt.subplot(1, 2, 2)  # 1 ligne, 2 colonnes, image 2
-        plt.imshow(image_data, cmap=cmap)
+        plt.imshow(image_data, cmap=cmap, norm=norm)
         plt.axis('off')
 
-        cbar = plt.colorbar(ticks=range(0,len(CLASS_MAPPING)))
+        cbar = plt.colorbar(ticks=np.arange(len(CLASS_MAPPING)) + 0.5)
         cbar.ax.set_yticklabels(CLASS_MAPPING.keys())
-        
+
     plt.show()
 
 
