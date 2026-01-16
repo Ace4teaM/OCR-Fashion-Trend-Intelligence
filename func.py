@@ -135,12 +135,24 @@ def segment_image(filename, infos={}):
         raise Exception("Format de fichier image inconnu : " + filename)
     
     # transmet l'image à l'API
-    start = time.perf_counter()  # horloge haute précision
-    response = requests.post(API_URL, headers=headers, data=data) # synchrone
-    duration = (time.perf_counter() - start)
-    
-    if not (response.status_code >= 200 and response.status_code < 300):
-        raise Exception("Erreur de traitement de l'image : " + filename)
+    retry = 1
+    while True:
+        start = time.perf_counter()  # horloge haute précision
+        response = requests.post(API_URL, headers=headers, data=data) # synchrone
+        duration = (time.perf_counter() - start)
+
+        if response.status_code == 408 and retry < 3:
+            retry = retry +1
+            print("Pas de réponse du serveur essai n° {retry}...")
+            continue
+
+        if response.status_code == 429:
+            raise Exception("Limite de requêtes atteintes")
+
+        if not (response.status_code >= 200 and response.status_code < 300):
+            raise Exception("Erreur de traitement de l'image : " + filename)
+        
+        break
 
     # obtient les différents résultats et crée un tableau unique pour représernter le masque à plusieurs niveaux
     results = response.json()
@@ -174,6 +186,9 @@ def segment_images_batch(list_of_image_paths):
         except Exception as e:
             print(f"Une erreur est survenue : {e}")
             batch_segmentations.append(None)
+            #si la limite de requête est atteinte, inutile de continuer
+            if e == "Limite de requêtes atteintes":
+                break
 
     return batch_segmentations
 
