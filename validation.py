@@ -25,26 +25,13 @@ if len(mask_paths) == 0:
     print("Aucune image de masque pour traitement du résultat.")
     exit(1)
 
-
+# Traitement
 print(f"\nTraitement de l'image {image_paths[0]}")
 # Appeler la fonction pour segmenter l'image en entrée
 seg_results = func.segment_image(image_paths[0])
 # Exporte l'image pour visualisation
 func.export_segmented_image(output_file, seg_results)
 
-
-# Exporte le résultat
-#if os.path.exists(output_file) == False:
-#    print(f"\nTraitement de l'image {image_paths[0]}")
-#    # Appeler la fonction pour segmenter l'image en entrée
-#    seg_results = func.segment_image(image_paths[0])
-#    # Exporte l'image pour visualisation
-#    func.export_segmented_image(output_file, seg_results)
-#else:
-#    # charge l'image en niveau de gris 1 composante (0-255)
-#    img = Image.open(output_file).convert("L")
-#    seg_results = np.array(img)
-#    print("seg_results", seg_results.dtype)
 
 # Test chaque masque de l'image
 IoUs = []
